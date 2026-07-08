@@ -105,7 +105,7 @@
   }
   .block blockquote p{margin:0 0 8px}
   .block blockquote p:last-child{margin-bottom:0}
-  .block a{color:#1f6759;text-decoration:underline;text-underline-offset:2px;font-weight:700}
+  .block a{color:#1f6759;text-decoration:underline;text-underline-offset:2px;font-weight:700;overflow-wrap:anywhere}
   .block a:hover{color:#155;}
   .block pre{
     margin:0;padding:16px;overflow:auto;border-radius:14px;
@@ -350,12 +350,12 @@ Markdown を書く場所と、読む場所を分けないための小さなエ�
 
   function inlineMd(value){
     let html = escapeHtml(value);
-    html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+|[^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+    html = html.replace(/!\[([^\]]*)\]\(((?:[^\s()]+|\([^\s()]*\))+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
     html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     html = html.replace(/~~([^~]+)~~/g, "<del>$1</del>");
     html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\(((?:[^\s()]+|\([^\s()]*\))+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
     return html;
   }
 
