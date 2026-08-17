@@ -452,19 +452,53 @@ Markdown を書く場所と、読む場所を分けないための小さなエ�
   }
 
   function renderList(raw){
-    const lines = raw.split("\n");
-    const ordered = /^\d+\.\s+/.test(lines[0]);
-    const tag = ordered ? "ol" : "ul";
-    const items = lines.map(line => {
-      let text = line.replace(/^(\s*)([-*+]|\d+\.)\s+/, "");
-      const task = text.match(/^\[( |x|X)\]\s+(.*)$/);
-      if(task){
-        const checked = task[1].toLowerCase() === "x" ? "checked" : "";
-        return `<li class="task"><input type="checkbox" ${checked} data-task-toggle><span>${inlineMd(task[2])}</span></li>`;
-      }
-      return `<li>${inlineMd(text)}</li>`;
-    }).join("");
-    return `<${tag}>${items}</${tag}>`;
+    const roots = [];
+    const stack = [{ indent: -1, children: roots }];
+
+    raw.split("\n").forEach(line => {
+      const match = line.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/);
+      if(!match) return;
+      const indent = match[1].replace(/\t/g, "    ").length;
+      const node = {
+        indent,
+        ordered: /^\d/.test(match[2]),
+        number: /^\d/.test(match[2]) ? Number.parseInt(match[2], 10) : null,
+        text: match[3],
+        children: []
+      };
+      while(stack[stack.length - 1].indent >= indent) stack.pop();
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+    });
+
+    const renderItems = nodes => {
+      if(!nodes.length) return "";
+      const groups = [];
+      nodes.forEach(node => {
+        const last = groups[groups.length - 1];
+        if(!last || last[0].ordered !== node.ordered) groups.push([]);
+        groups[groups.length - 1].push(node);
+      });
+
+      return groups.map(group => {
+        const tag = group[0].ordered ? "ol" : "ul";
+        const start = tag === "ol" && group[0].number !== 1 ? ` start="${group[0].number}"` : "";
+        const items = group.map((node, index) => {
+          const task = node.text.match(/^\[( |x|X)\]\s+(.*)$/);
+          const nested = renderItems(node.children);
+          const expectedNumber = group[0].number + index;
+          const value = node.ordered && node.number !== expectedNumber ? ` value="${node.number}"` : "";
+          if(task){
+            const checked = task[1].toLowerCase() === "x" ? "checked" : "";
+            return `<li${value} class="task"><input type="checkbox" ${checked} data-task-toggle><span>${inlineMd(task[2])}${nested}</span></li>`;
+          }
+          return `<li${value}>${inlineMd(node.text)}${nested}</li>`;
+        }).join("");
+        return `<${tag}${start}>${items}</${tag}>`;
+      }).join("");
+    };
+
+    return renderItems(roots);
   }
 
   function renderTable(raw){
